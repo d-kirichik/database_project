@@ -10,7 +10,7 @@ def status():
     tables = ['Users', 'Threads', 'Forums', 'Posts']
 
     for t in tables:
-        count = len(execute('SELECT id FROM ' + t))
+        count = len(execute_select_all('SELECT id FROM ' + t))
         resp.append(count)
 
     json = {

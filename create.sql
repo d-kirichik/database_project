@@ -4,9 +4,10 @@ CREATE TABLE `Users`(
 	`username` VARCHAR (30),
 	`about` TEXT,
 	`name` VARCHAR (30),
-    `email` VARCHAR (30) NOT NULL,
+  `email` VARCHAR (30) NOT NULL,
 	`isAnonymous` BOOL NOT NULL DEFAULT False,
-	PRIMARY KEY (`id`)
+	PRIMARY KEY (`id`),
+  UNIQUE KEY (`email`)
 ) ENGINE = MYISAM;
 
 
@@ -16,6 +17,8 @@ CREATE TABLE `Forums`(
     `slug` VARCHAR (30) NOT NULL,
     `user` VARCHAR (30) NOT NULL,
 	PRIMARY KEY (`id`),
+  UNIQUE KEY (`slug`),
+    UNIQUE KEY (`name`),
     CONSTRAINT FOREIGN KEY (`user`) REFERENCES `Users` (`email`) ON DELETE CASCADE
 ) ENGINE = MYISAM;
 

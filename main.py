@@ -14,4 +14,4 @@ app.register_blueprint(thread_app, url_prefix=API_PREFIX + '/thread')
 app.register_blueprint(post_app, url_prefix=API_PREFIX + '/post')
 
 
-app.run(debug=True)
+app.run()
