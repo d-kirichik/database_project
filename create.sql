@@ -56,3 +56,12 @@ CREATE TABLE `Posts` (
     CONSTRAINT FOREIGN KEY (`user`) REFERENCES `Users` (`email`) ON DELETE CASCADE,
     CONSTRAINT FOREIGN KEY (`thread`) REFERENCES `Threads` (`id`) ON DELETE CASCADE
 ) ENGINE = MYISAM;
+
+CREATE TABLE `Followers` (
+    `id` MEDIUMINT(11) NOT NULL AUTO_INCREMENT,
+    `follower_mail` VARCHAR (30) NOT NULL,
+    `followee_mail` VARCHAR (30) NOT NULL,
+    PRIMARY KEY (`id`),
+    CONSTRAINT FOREIGN KEY (`follower_mail`) REFERENCES `Users` (`email`) ON DELETE CASCADE,
+    CONSTRAINT FOREIGN KEY (`followee_mail`) REFERENCES `Users` (`email`) ON DELETE CASCADE
+) ENGINE = MYISAM;

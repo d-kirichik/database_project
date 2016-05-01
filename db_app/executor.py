@@ -1,13 +1,13 @@
 import MySQLdb
 
 
-def connect_to_db():
+def __connect_to_db():
     return MySQLdb.connect(host='localhost', user='user', passwd='1234',
                            db='database_project', charset='utf8', use_unicode=True)
 
 
 def execute_select_all(query):
-    connection = connect_to_db()
+    connection = __connect_to_db()
     cursor = connection.cursor()
     cursor.execute(query)
     ret = cursor.fetchall()
@@ -17,7 +17,7 @@ def execute_select_all(query):
 
 
 def execute_insert(query, params):
-    connection = connect_to_db()
+    connection = __connect_to_db()
     cursor = connection.cursor()
     entity_id = -1
     try:
@@ -31,7 +31,7 @@ def execute_insert(query, params):
 
 
 def execute_select_one(query, params):
-    connection = connect_to_db()
+    connection = __connect_to_db()
     cursor = connection.cursor()
     result = []
     try:

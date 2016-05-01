@@ -1,13 +1,14 @@
 from flask import jsonify, Blueprint
 from flask import request
 from db_app.executor import *
+import urlparse
 
 app = Blueprint('user_app', __name__)
 
 
 def serialize_user(user):
     user = user[0]
-    response = {
+    resp = {
         'about': user[2],
         'email': user[1],
         'id': user[0],
@@ -15,10 +16,10 @@ def serialize_user(user):
         'name': user[4],
         'username': user[5]
     }
-    return response
+    return resp
 
 
-def parse_request_data(json_data):
+def __parse_user_request_data(json_data):
     res = []
     try:
         res.append((json_data["username"]))
@@ -39,7 +40,7 @@ def create():
     user_data = request.json
     insert_stmt = ()
     data = ()
-    res = parse_request_data(user_data)
+    res = __parse_user_request_data(user_data)
     if(len(res) == 0):
         answer = {"code": 2, "response": "invalid json"}
         return jsonify(answer)
@@ -69,4 +70,85 @@ def create():
     resp = execute_select_one(select_stmt, user_id)
     answer = jsonify({"code": 0, "response": serialize_user(resp)})
     return answer
+
+
+@app.route('/details/', methods=['GET'])
+def details():
+    #TODO add followers and subscriptions
+    qs = urlparse.urlparse(request.url).query
+    mail = urlparse.parse_qs(qs)
+    user_mail = mail["user"]
+    select_stmt = (
+        'SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s'
+    )
+    user = execute_select_one(select_stmt, user_mail)
+    answer = jsonify({"code": 0, "response": serialize_user(user)})
+    return answer
+
+
+@app.route('/follow/', methods=['POST'])
+def follow():
+    user_data = request.json
+    data = []
+    try:
+        data.append(user_data["follower"])
+        data.append(user_data["followee"])
+        #TODO: validate mail
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    insert_stmt = (
+        'INSERT INTO Followers (follower_mail, followee_mail) '
+        'VALUES (%s, %s)'
+    )
+    #TODO: validate user
+    pair_id = execute_insert(insert_stmt, data)
+    return jsonify({"code": 0, "response": pair_id})
+
+
+@app.route('/unfollow/', methods=['POST'])
+def unfollow():
+    user_data = request.json
+    data = []
+    try:
+        data.append(user_data["follower"])
+        data.append(user_data["followee"])
+        #TODO: validate mail
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    #TODO: validate user
+    delete_stmt = ('DELETE FROM Followers WHERE follower_mail = % s AND followee_mail = % s')
+    insert_id = execute_insert(delete_stmt, data)
+    return jsonify({"code": 0, "response": insert_id})
+
+@app.route('/updateProfile/', methods=['POST'])
+def update():
+    #TODO: validate, add followers and subscriptions
+    user_data = request.json
+    res = []
+    try:
+        res.append(user_data["about"])
+        res.append(user_data["name"])
+        res.append(user_data["user"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    update_stmt = ('UPDATE Users SET about = %s, name = %s WHERE email = %s')
+    execute_insert(update_stmt, res)
+    select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
+    resp = execute_select_one(select_stmt, res[2])
+    answer = jsonify({"code": 0, "response": serialize_user(resp)})
+    return answer
+
+
+
+
+
+
+
+
+
+
+
 
