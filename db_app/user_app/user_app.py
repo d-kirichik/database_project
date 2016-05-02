@@ -122,6 +122,7 @@ def unfollow():
     insert_id = execute_insert(delete_stmt, data)
     return jsonify({"code": 0, "response": insert_id})
 
+
 @app.route('/updateProfile/', methods=['POST'])
 def update():
     #TODO: validate, add followers and subscriptions
@@ -142,8 +143,84 @@ def update():
     return answer
 
 
+@app.route('/listFollowers/', methods=['GET'])
+def listFollowers():
+    #TODO: for number of users
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    count = 0
+    try:
+        data.append(req["user"])
+        count+=1
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    select_stmt = 'SELECT follower_mail FROM Followers WHERE followee_mail = %s'
+    try:
+        data.append(req["since_id"])
+        select_stmt += 'AND id >=' + data[count][0]
+        count += 1
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY followee_mail ' + data[count][0]
+        count += 1
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += 'LIMIT' + data[count][0]
+    except KeyError:
+        pass
+    mails = execute_select_one(select_stmt, data[0])
+    select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
+    followers = []
+    for mail in mails:
+        followers.append(execute_select_one(select_stmt, mail))
+    for user in followers:
+         return jsonify((serialize_user(user)))
 
 
+@app.route('/listFollowing/', methods=['GET'])
+def listFollowing():
+    #TODO: for number of users
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    count = 0
+    try:
+        data.append(req["user"])
+        count+=1
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
+    try:
+        data.append(req["since_id"])
+        select_stmt += 'AND id >=' + data[count][0]
+        count += 1
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY followee_mail ' + data[count][0]
+        count += 1
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += 'LIMIT' + data[count][0]
+    except KeyError:
+        pass
+    mails = execute_select_one(select_stmt, data[0])
+    select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
+    followers = []
+    for mail in mails:
+        followers.append(execute_select_one(select_stmt, mail))
+    for user in followers:
+         return jsonify((serialize_user(user)))
 
 
 

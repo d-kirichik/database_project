@@ -41,6 +41,7 @@ def execute_select_one(query, params):
     except Exception, MySQLdb.Error:
         result = []
         cursor.close()
+        print(MySQLdb.Error)
     return result
 
 
