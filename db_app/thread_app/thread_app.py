@@ -13,7 +13,6 @@ def str_to_bool(str_req):
 
 
 def serialize_thread(thread):
-    thread = thread[0]
     resp = {
         'date': thread[5],
         'forum': thread[1],
