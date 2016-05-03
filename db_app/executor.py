@@ -26,6 +26,7 @@ def execute_insert(query, params):
         connection.commit()
         cursor.close()
     except Exception, MySQLdb.Error:
+        print(MySQLdb.Error)
         connection.rollaback()
     return entity_id
 
