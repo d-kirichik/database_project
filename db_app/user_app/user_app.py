@@ -222,7 +222,7 @@ def listFollowing():
     for user in followers:
          return jsonify((serialize_user(user)))
 
-
+#TODO: listPosts
 
 
 
