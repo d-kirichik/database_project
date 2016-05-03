@@ -14,8 +14,8 @@ CREATE TABLE `Users`(
 CREATE TABLE `Forums`(
 	`id` MEDIUMINT(11) NOT NULL AUTO_INCREMENT,
 	`name` VARCHAR (30) NOT NULL,
-    `slug` VARCHAR (30) NOT NULL,
-    `user` VARCHAR (30) NOT NULL,
+  `slug` VARCHAR (30) NOT NULL,
+  `user` VARCHAR (30) NOT NULL,
 	PRIMARY KEY (`id`),
   UNIQUE KEY (`slug`),
     UNIQUE KEY (`name`),
@@ -33,6 +33,7 @@ CREATE TABLE `Threads` (
     `message` TEXT NOT NULL,
     `slug` VARCHAR (50) NOT NULL,
     `isDeleted` BOOL NOT NULL DEFAULT False,
+    `posts` MEDIUMINT(11) DEFAULT 0,
     PRIMARY KEY (`id`),
     CONSTRAINT FOREIGN KEY (`forum`) REFERENCES `Forums` (`slug`) ON DELETE CASCADE,
     CONSTRAINT FOREIGN KEY (`user`) REFERENCES `Users` (`email`) ON DELETE CASCADE
@@ -40,12 +41,12 @@ CREATE TABLE `Threads` (
 
 CREATE TABLE `Posts` (
 	`id` MEDIUMINT(11) NOT NULL AUTO_INCREMENT,
-    `date` DATETIME NOT NULL,
-    `thread` MEDIUMINT(11) NOT NULL,
-    `message` TEXT NOT NULL,
-    `user` VARCHAR (30) NOT NULL,
-    `forum` VARCHAR (30) NOT NULL,
-	`parent` MEDIUMINT(11),
+  `date` DATETIME NOT NULL,
+  `thread` MEDIUMINT(11) NOT NULL,
+  `message` TEXT NOT NULL,
+  `user` VARCHAR (30) NOT NULL,
+  `forum` VARCHAR (30) NOT NULL,
+	`parent` MEDIUMINT(11) DEFAULT -1,
 	`isApproved` BOOL NOT NULL DEFAULT False,
 	`isHighlighted` BOOL NOT NULL DEFAULT False,
 	`isEdited` BOOL NOT NULL DEFAULT False,
