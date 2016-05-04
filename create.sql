@@ -15,8 +15,8 @@ CREATE TABLE `Users`(
 
 CREATE TABLE `Forums`(
 	`id` MEDIUMINT(11) NOT NULL AUTO_INCREMENT,
-	`name` VARCHAR (30) NOT NULL,
-  `slug` VARCHAR (30) NOT NULL,
+	`name` VARCHAR (50) NOT NULL,
+  `slug` VARCHAR (50) NOT NULL,
   `user` VARCHAR (30) NOT NULL,
 	PRIMARY KEY (`id`),
   UNIQUE KEY (`slug`),

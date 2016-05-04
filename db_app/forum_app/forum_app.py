@@ -68,7 +68,8 @@ def details():
     count = 1
     select_stmt = ('SELECT * FROM Forums WHERE slug = %s')
     forum = execute_select_one(select_stmt, data[0])
-    answer = {"code": 0, "response": serialize_forum(forum[0], forum[0][0])}
+    forum_data = [forum[0][1], forum[0][2], forum[0][3]]
+    answer = {"code": 0, "response": serialize_forum(forum_data, forum[0][0])}
     return jsonify(answer)
 
 @app.route('/listPosts/', methods=['GET'])
