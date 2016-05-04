@@ -6,12 +6,11 @@ import urlparse
 app = Blueprint('user_app', __name__)
 
 
-def serialize_user(user):
-    user = user[0]
+def serialize_user(user, user_id):
     resp = {
         'about': user[2],
         'email': user[1],
-        'id': user[0],
+        'id': user_id,
         'isAnonymous': bool(user[3]),
         'name': user[4],
         'username': user[5]
@@ -68,7 +67,7 @@ def create():
     user_id = execute_insert(insert_stmt, data)
     select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE id = %s')
     resp = execute_select_one(select_stmt, user_id)
-    answer = jsonify({"code": 0, "response": serialize_user(resp)})
+    answer = jsonify({"code": 0, "response": serialize_user(resp[0], user_id)})
     return answer
 
 
@@ -82,7 +81,7 @@ def details():
         'SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s'
     )
     user = execute_select_one(select_stmt, user_mail)
-    answer = jsonify({"code": 0, "response": serialize_user(user)})
+    answer = jsonify({"code": 0, "response": serialize_user(user[0], user[0][0])})
     return answer
 
 
@@ -139,7 +138,7 @@ def update():
     execute_insert(update_stmt, res)
     select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
     resp = execute_select_one(select_stmt, res[2])
-    answer = jsonify({"code": 0, "response": serialize_user(resp)})
+    answer = jsonify({"code": 0, "response": serialize_user(resp[0], resp[0][0])})
     return answer
 
 
@@ -199,7 +198,7 @@ def listFollowing():
     select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
     try:
         data.append(req["since_id"])
-        select_stmt += 'AND id >=' + data[count][0]
+        select_stmt += ' AND id >=' + data[count][0]
         count += 1
     except KeyError:
         pass
@@ -211,7 +210,7 @@ def listFollowing():
         pass
     try:
         data.append(req["limit"])
-        select_stmt += 'LIMIT' + data[count][0]
+        select_stmt += ' LIMIT ' + data[count][0]
     except KeyError:
         pass
     mails = execute_select_one(select_stmt, data[0])
@@ -220,7 +219,7 @@ def listFollowing():
     for mail in mails:
         followers.append(execute_select_one(select_stmt, mail))
     for user in followers:
-         return jsonify((serialize_user(user)))
+         return jsonify((serialize_user(user[0], user[0][0])))
 
 #TODO: listPosts
 

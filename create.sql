@@ -1,4 +1,6 @@
 # noinspection SqlNoDataSourceInspectionForFile
+ALTER DATABASE database_project DEFAULT CHARACTER SET cp1251 COLLATE cp1251_general_ci;
+
 CREATE TABLE `Users`(
 	`id` MEDIUMINT(11) NOT NULL AUTO_INCREMENT,
 	`username` VARCHAR (30),

@@ -1,28 +1,37 @@
 from flask import Blueprint
 from flask import request, jsonify
 from db_app.executor import *
+import urlparse
 
 app = Blueprint('thread_app', __name__)
 
 
-def str_to_bool(str_req):
-    if(str_req == "true"):
-        return 1
-    else:
-        return 0
-
-
-def serialize_thread(thread):
+def serialize_unicode_thread(thread, thread_id):
     resp = {
-        'date': thread[5],
-        'forum': thread[1],
-        'id': thread[0],
-        'isClosed': bool(thread[3]),
-        'isDeleted': bool(thread[8]),
-        'message': thread[6],
-        'slug': thread[7],
-        'title': thread[2],
-        'user': thread[4]
+        'date': thread[4],
+        'forum': thread[0],
+        'id': int(thread_id),
+        'isClosed': bool(thread[2]),
+        'isDeleted': bool(thread[7]),
+        'message': thread[5],
+        'slug': thread[6],
+        'title': thread[1],
+        'user': thread[3]
+    }
+    return resp
+
+
+def serialize_thread(thread, thread_id):
+    resp = {
+        'date': thread[4].isoformat(sep=' '),
+        'forum': thread[0],
+        'id': int(thread_id),
+        'isClosed': bool(thread[2]),
+        'isDeleted': bool(thread[7]),
+        'message': thread[5],
+        'slug': thread[6],
+        'title': thread[1],
+        'user': thread[3]
     }
     return resp
 
@@ -38,7 +47,7 @@ def _parse_thread_request_data(json_data):
         res.append((json_data["message"]))
         res.append((json_data["slug"]))
         try:
-            res.append((json_data["isClosed"]))
+            res.append((json_data["isDeleted"]))
         except KeyError:
             pass
     except KeyError:
@@ -57,17 +66,34 @@ def create():
     insert_stmt = ('INSERT INTO Threads (forum, title, isClosed, user, date, message, slug, isDeleted) '
                        'VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
     )
-    res[2] = str_to_bool(res[2])
+    res[2] = int(res[2])
     if(len(res) == 7):
-        res[7] = str_to_bool(res[7])
+        res[7] = int(res[7])
     elif(len(res) == 6):
         res.append(0)
-    print(res)
     user_id = execute_insert(insert_stmt, res)
-    select_stmt = ('SELECT id, forum, title, isClosed, user, date, message, slug, isDeleted FROM Threads WHERE id = %s')
-    resp = execute_select_one(select_stmt, user_id)
-    answer = jsonify({"code": 0, "response": serialize_thread(resp)})
+    answer = jsonify({"code": 0, "response": serialize_unicode_thread(res, user_id)})
     return answer
+
+
+@app.route('/details/', methods=['GET'])
+def details():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    try:
+        data.append(req["thread"])
+    except KeyError:
+        answer = {"code": 3, "response": "incorrect request"}
+        return jsonify(answer)
+    try:
+        data.append(req["related"])
+    except KeyError:
+        pass
+    select_stmt = 'SELECT forum, title, isClosed, user, date, message, slug, isDeleted FROM Threads WHERE id = %s'
+    threads = execute_select_one(select_stmt, data[0])
+    answer = {"code": 0, "response": serialize_thread(threads[0], data[0][0])}
+    return jsonify(answer)
 
 
 @app.route('/close/', methods=['POST'])

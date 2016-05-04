@@ -139,7 +139,7 @@ def listThreads():
         pass
     thread = execute_select_one(select_stmt, data[0])
     try:
-        print(serialize_thread(thread[0]))
+        print(serialize_thread(thread[0], thread[0][0]))
     except Exception as e:
         print e.message
     answer = {"code": 0, "response": serialize_thread(thread[0])}

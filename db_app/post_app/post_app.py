@@ -72,7 +72,6 @@ def create():
         data[10] = int(post_data["isDeleted"])
     except KeyError:
         pass
-    print(data)
     insert_stmt = ('INSERT INTO Posts (date, thread, message, user, forum, parent, isApproved, isHighlighted, isEdited, isSpam, isDeleted)'
                    'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)'
     )

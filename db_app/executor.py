@@ -3,7 +3,7 @@ import MySQLdb
 
 def __connect_to_db():
     return MySQLdb.connect(host='localhost', user='user', passwd='1234',
-                           db='database_project', charset='utf8', use_unicode=True)
+                           db='database_project', charset='cp1251', use_unicode=True)
 
 
 def execute_select_all(query):
@@ -27,7 +27,7 @@ def execute_insert(query, params):
         cursor.close()
     except Exception, MySQLdb.Error:
         print(MySQLdb.Error)
-        connection.rollaback()
+        connection.rollback()
     return entity_id
 
 
