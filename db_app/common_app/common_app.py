@@ -26,7 +26,7 @@ def status():
 def clear():
     set_stmt = ('SET FOREIGN_KEY_CHECKS=0')
     execute_insert(set_stmt, ())
-    tables = ['Users', 'Threads', 'Forums', 'Posts', 'Followers']
+    tables = ['Users', 'Threads', 'Forums', 'Posts', 'Followers', 'Subscriptions']
     for table in tables:
         del_stmt = ('TRUNCATE TABLE ')
         del_stmt += table

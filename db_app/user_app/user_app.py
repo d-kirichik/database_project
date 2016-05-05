@@ -6,10 +6,12 @@ import urlparse
 app = Blueprint('user_app', __name__)
 
 
-def serialize_user(user, user_id):
+def serialize_user(user, user_id, subscriptions, following, followers):
     resp = {
         'about': user[2],
         'email': user[1],
+        'followers': followers,
+        'following': following,
         'id': user_id,
         'isAnonymous': bool(user[3]),
         'name': user[4],
@@ -67,7 +69,8 @@ def create():
     user_id = execute_insert(insert_stmt, data)
     select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE id = %s')
     resp = execute_select_one(select_stmt, user_id)
-    answer = jsonify({"code": 0, "response": serialize_user(resp[0], user_id)})
+    sub = following = followers = []
+    answer = jsonify({"code": 0, "response": serialize_user(resp[0], user_id, sub, following, followers)})
     return answer
 
 
@@ -81,7 +84,16 @@ def details():
         'SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s'
     )
     user = execute_select_one(select_stmt, user_mail)
-    answer = jsonify({"code": 0, "response": serialize_user(user[0], user[0][0])})
+    select_stmt = ('SELECT followee_mail, follower_mail FROM Followers WHERE follower_mail = %s')
+    subs = execute_select_one(select_stmt, user_mail)
+    res = []
+    following = []
+    for fol in subs:
+        following.append(fol[1])
+    followers = []
+    for fol in subs:
+        res.append(fol[0])
+    answer = jsonify({"code": 0, "response": serialize_user(user[0], user[0][0], res, following, followers)})
     return answer
 
 
@@ -102,6 +114,7 @@ def follow():
     )
     #TODO: validate user
     pair_id = execute_insert(insert_stmt, data)
+    print(pair_id)
     return jsonify({"code": 0, "response": pair_id})
 
 
@@ -138,7 +151,8 @@ def update():
     execute_insert(update_stmt, res)
     select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
     resp = execute_select_one(select_stmt, res[2])
-    answer = jsonify({"code": 0, "response": serialize_user(resp[0], resp[0][0])})
+    sub = following = followers = []
+    answer = jsonify({"code": 0, "response": serialize_user(resp[0], resp[0][0], sub, following, followers)})
     return answer
 
 

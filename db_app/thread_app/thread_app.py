@@ -122,3 +122,35 @@ def open():
     execute_insert(update_stmt, thread_id)
     answer = {"code": 0, "response": thread_id}
     return jsonify(answer)
+
+
+@app.route('/subscribe/', methods=['POST'])
+def subscribe():
+    data = request.json
+    sub_data = []
+    try:
+        sub_data.append(data["str"])
+        sub_data.append(data["thread"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    ins_stmt = 'INSERT INTO Subscribe (thread, user) VALUES (%s, %s)'
+    ins_id = execute_insert(ins_stmt, sub_data)
+    answer = {"code": 0, "response": ins_id}
+    return jsonify(answer)
+
+
+@app.route('/unsubscribe/', methods=['POST'])
+def unsubscribe():
+    data = request.json
+    sub_data = []
+    try:
+        sub_data.append(data["str"])
+        sub_data.append(data["thread"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    ins_stmt = 'DELETE FROM Subscribe WHERE thread = %s AND user = %s'
+    ins_id = execute_insert(ins_stmt, sub_data)
+    answer = {"code": 0, "response": ins_id}
+    return jsonify(answer)
