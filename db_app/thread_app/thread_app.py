@@ -154,3 +154,28 @@ def unsubscribe():
     ins_id = execute_insert(ins_stmt, sub_data)
     answer = {"code": 0, "response": ins_id}
     return jsonify(answer)
+
+
+@app.route('/vote/', methods=['POST'])
+def vote():
+    data = request.json
+    vote_data = []
+    upd_stmt = ()
+    try:
+        vote_data.append(data["vote"])
+        vote_data.append(data["thread"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    if(vote_data[0] == 1):
+        upd_stmt = ('UPDATE Threads SET likes = likes + 1 WHERE id = %s')
+    if(vote_data[0] == -1):
+        upd_stmt = ('UPDATE Threads SET dislikes = dislikes + 1 WHERE id = %s')
+    upd_id = execute_insert(upd_stmt, vote_data[1])
+    answer = {"code": 0, "response": upd_id}
+    return jsonify(answer)
+
+
+
+
+
