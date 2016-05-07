@@ -176,6 +176,107 @@ def vote():
     return jsonify(answer)
 
 
+@app.route('/remove/', methods=['POST'])
+def remove():
+    data = request.json
+    rem_data = []
+    try:
+        rem_data.append(data["thread"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    upd_stmt = ('UPDATE Threads SET isDeleted = 1 WHERE id = %s')
+    execute_insert(upd_stmt, rem_data[0])
+    answer = {"code": 0, "response": rem_data[0]}
+    return jsonify(answer)
 
 
+@app.route('/restore/', methods=['POST'])
+def restore():
+    data = request.json
+    rem_data = []
+    try:
+        rem_data.append(data["thread"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    upd_stmt = ('UPDATE Threads SET isDeleted = 0 WHERE id = %s')
+    execute_insert(upd_stmt, rem_data[0])
+    answer = {"code": 0, "response": rem_data[0]}
+    return jsonify(answer)
 
+
+@app.route('/list/', methods=['GET'])
+def list():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    try:
+        data.append(req["user"])
+        select_stmt = ('SELECT * FROM Threads WHERE user = %s')
+    except KeyError:
+        try:
+            data.append(req["forum"])
+            select_stmt = ('SELECT * FROM Threads WHERE forum = %s')
+        except KeyError:
+            answer = {"code": 3, "response": "incorrect request"}
+            return jsonify(answer)
+    try:
+        data.append(req["since"])
+        select_stmt += ' AND data > %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += ' LIMIT %s '
+    except KeyError:
+        pass
+    req_data = []
+    for d in data:
+        req_data.append(d[0])
+    threads = execute_select_one(select_stmt, req_data)
+    serialized_thread = threads[0][1:]
+    print(threads[0])
+    answer = {"code": 0, "response": serialize_thread(serialized_thread, threads[0][0])}
+    return jsonify(answer)
+
+
+@app.route('/listPosts/', methods=['GET'])
+def listPosts():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    try:
+        data.append(req["thread"])
+    except KeyError:
+        answer = {"code": 3, "response": "incorrect request"}
+        return jsonify(answer)
+    select_stmt = ('SELECT * FROM Posts WHERE thread = %s')
+    try:
+        data.append(req["since"])
+        select_stmt += ' AND data > %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += ' LIMIT %s '
+    except KeyError:
+        pass
+    print select_stmt
+    req_data = []
+    for d in data:
+        req_data.append(d[0])
+    posts = execute_select_one(select_stmt, req_data)
+    print posts
+    answer = {"code": 0, "response": []}
+    return jsonify(answer)
