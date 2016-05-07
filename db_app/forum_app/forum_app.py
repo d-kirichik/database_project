@@ -145,3 +145,38 @@ def listThreads():
         print e.message
     answer = {"code": 0, "response": serialize_thread(thread[0])}
     return jsonify(answer)
+
+
+@app.route('/listUsers/', methods=['GET'])
+def listUsers():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    try:
+        data.append(req["forum"])
+    except KeyError:
+        answer = {"code": 3, "response": "invalid json"}
+        return jsonify(answer)
+    select_stmt = ('SELECT * FROM Users WHERE email IN (SELECT DISTINCT user FROM Posts WHERE forum = %s)')
+    try:
+        data.append(req["since"])
+        select_stmt += ' AND date > %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += ' LIMIT %s '
+    except KeyError:
+        pass
+    req_data = []
+    for d in data:
+        req_data.append(d[0])
+    posts = execute_select_one(select_stmt, req_data)
+    print(posts)
+    answer = {"code": 0, "response": []}
+    return jsonify(answer)

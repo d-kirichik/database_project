@@ -280,3 +280,20 @@ def listPosts():
     print posts
     answer = {"code": 0, "response": []}
     return jsonify(answer)
+
+
+@app.route('/update/', methods=['POST'])
+def update():
+    data = request.json
+    up_data = []
+    try:
+        up_data.append(data["message"])
+        up_data.append(data["slug"])
+        up_data.append(data["thread"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    update_stmt = ('UPDATE Threads SET message = %s, slug = %s WHERE id = %s')
+    ins_id = execute_insert(update_stmt, up_data)
+    answer = {"code": 0, "response": ins_id}
+    return jsonify(answer)

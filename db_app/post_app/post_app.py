@@ -119,6 +119,112 @@ def details():
     return jsonify(answer)
 
 
+@app.route('/vote/', methods=['POST'])
+def vote():
+    data = request.json
+    vote_data = []
+    upd_stmt = ()
+    try:
+        vote_data.append(data["vote"])
+        vote_data.append(data["post"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    if(vote_data[0] == 1):
+        upd_stmt = ('UPDATE Posts SET likes = likes + 1 WHERE id = %s')
+    if(vote_data[0] == -1):
+        upd_stmt = ('UPDATE Posts SET dislikes = dislikes + 1 WHERE id = %s')
+    upd_id = execute_insert(upd_stmt, vote_data[1])
+    answer = {"code": 0, "response": upd_id}
+    return jsonify(answer)
+
+
+@app.route('/list/', methods=['GET'])
+def list():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    try:
+        data.append(req["thread"])
+        select_stmt = ('SELECT * FROM Posts WHERE thread = %s')
+    except KeyError:
+        try:
+            data.append(req["forum"])
+            select_stmt = ('SELECT * FROM Posts WHERE forum = %s')
+        except KeyError:
+            answer = {"code": 3, "response": "incorrect request"}
+            return jsonify(answer)
+    try:
+        data.append(req["since"])
+        select_stmt += ' AND data > %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += ' LIMIT %s '
+    except KeyError:
+        pass
+    req_data = []
+    for d in data:
+        req_data.append(d[0])
+    print(req_data)
+    posts = execute_select_one(select_stmt, req_data)
+    print(posts)
+    serialized_post = posts[0][1:]
+    answer = {"code": 0, "response": serialize_post(serialized_post, posts[0][0])}
+    return jsonify(answer)
+
+
+@app.route('/remove/', methods=['POST'])
+def remove():
+    data = request.json
+    rem_data = []
+    try:
+        rem_data.append(data["post"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    upd_stmt = ('UPDATE Posts SET isDeleted = 1 WHERE id = %s')
+    execute_insert(upd_stmt, rem_data[0])
+    answer = {"code": 0, "response": rem_data[0]}
+    return jsonify(answer)
+
+
+@app.route('/restore/', methods=['POST'])
+def restore():
+    data = request.json
+    rem_data = []
+    try:
+        rem_data.append(data["post"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    upd_stmt = ('UPDATE Posts SET isDeleted = 0 WHERE id = %s')
+    execute_insert(upd_stmt, rem_data[0])
+    answer = {"code": 0, "response": rem_data[0]}
+    return jsonify(answer)
+
+
+@app.route('/update/', methods=['POST'])
+def update():
+    data = request.json
+    up_data = []
+    try:
+        up_data.append(data["message"])
+        up_data.append(data["post"])
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    update_stmt = ('UPDATE Posts SET message = %s WHERE id = %s')
+    ins_id = execute_insert(update_stmt, up_data)
+    answer = {"code": 0, "response": ins_id}
+    return jsonify(answer)
+
 
 
 

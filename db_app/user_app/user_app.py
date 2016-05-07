@@ -235,7 +235,40 @@ def listFollowing():
     for user in followers:
          return jsonify((serialize_user(user[0], user[0][0])))
 
-#TODO: listPosts
+
+@app.route('/listPosts/', methods=['GET'])
+def listPosts():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    try:
+        data.append(req["user"])
+    except KeyError:
+        answer = {"code": 3, "response": "invalid json"}
+        return jsonify(answer)
+    select_stmt = ('SELECT * FROM Posts WHERE user = %s')
+    try:
+        data.append(req["since"])
+        select_stmt += ' AND date > %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY %s '
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += ' LIMIT %s '
+    except KeyError:
+        pass
+    req_data = []
+    for d in data:
+        req_data.append(d[0])
+    posts = execute_select_one(select_stmt, req_data)
+    print(posts)
+    answer = {"code": 0, "response": []}
+    return jsonify(answer)
 
 
 
