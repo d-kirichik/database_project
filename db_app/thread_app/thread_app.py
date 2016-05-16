@@ -29,6 +29,7 @@ def serialize_thread(thread, thread_id):
         'isClosed': bool(thread[2]),
         'isDeleted': bool(thread[7]),
         'message': thread[5],
+        'posts': thread[8],
         'slug': thread[6],
         'title': thread[1],
         'user': thread[3]
@@ -90,7 +91,7 @@ def details():
         data.append(req["related"])
     except KeyError:
         pass
-    select_stmt = 'SELECT forum, title, isClosed, user, date, message, slug, isDeleted FROM Threads WHERE id = %s'
+    select_stmt = 'SELECT forum, title, isClosed, user, date, message, slug, isDeleted, posts FROM Threads WHERE id = %s'
     threads = execute_select_one(select_stmt, data[0])
     answer = {"code": 0, "response": serialize_thread(threads[0], data[0][0])}
     return jsonify(answer)

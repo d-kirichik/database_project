@@ -6,6 +6,14 @@ import urlparse
 app = Blueprint('post_app', __name__)
 
 
+def posts_to_list(posts):
+    resp = []
+    for post in posts:
+        resp.append(serialize_post(post[1:], post[0]))
+    print resp
+    return resp
+
+
 def serialize_unicode_post(post, post_id):
     resp = {
         'date': post[0],
@@ -27,6 +35,7 @@ def serialize_unicode_post(post, post_id):
 def serialize_post(post, post_id):
     resp = {
         'date': post[0].isoformat(sep=' '),
+        'dislikes': post[11],
         'forum': post[4],
         'id': post_id,
         'isApproved': bool(post[6]),
@@ -34,8 +43,10 @@ def serialize_post(post, post_id):
         'isEdited': bool(post[8]),
         'isHighlighted': bool(post[7]),
         'isSpam': bool(post[9]),
+        'likes': post[12],
         'message': post[2],
         'parent': post[5],
+        'points': post[13],
         'thread': post[1],
         'user': post[3]
     }
@@ -124,6 +135,7 @@ def vote():
     data = request.json
     vote_data = []
     upd_stmt = ()
+    upd_points = ()
     try:
         vote_data.append(data["vote"])
         vote_data.append(data["post"])
@@ -132,9 +144,12 @@ def vote():
         return jsonify(answer)
     if(vote_data[0] == 1):
         upd_stmt = ('UPDATE Posts SET likes = likes + 1 WHERE id = %s')
+        upd_points = 'UPDATE Posts SET points = points + 1 WHERE id = %s'
     if(vote_data[0] == -1):
         upd_stmt = ('UPDATE Posts SET dislikes = dislikes + 1 WHERE id = %s')
+        upd_points = 'UPDATE Posts SET points = points - 1 WHERE id = %s'
     upd_id = execute_insert(upd_stmt, vote_data[1])
+    execute_insert(upd_points, vote_data[1])
     answer = {"code": 0, "response": upd_id}
     return jsonify(answer)
 
@@ -144,6 +159,8 @@ def list():
     qs = urlparse.urlparse(request.url).query
     req = urlparse.parse_qs(qs)
     data = []
+    limit = 0
+    forum = 0
     try:
         data.append(req["thread"])
         select_stmt = ('SELECT * FROM Posts WHERE thread = %s')
@@ -151,12 +168,13 @@ def list():
         try:
             data.append(req["forum"])
             select_stmt = ('SELECT * FROM Posts WHERE forum = %s')
+            forum = 1
         except KeyError:
             answer = {"code": 3, "response": "incorrect request"}
             return jsonify(answer)
     try:
         data.append(req["since"])
-        select_stmt += ' AND data > %s '
+        select_stmt += ' AND date > %s '
     except KeyError:
         pass
     try:
@@ -167,16 +185,20 @@ def list():
     try:
         data.append(req["limit"])
         select_stmt += ' LIMIT %s '
+        limit = 1
     except KeyError:
         pass
+    print(data)
     req_data = []
     for d in data:
         req_data.append(d[0])
-    print(req_data)
+    if forum == 0:
+        req_data[0] = int(req_data[0])
+    if limit == 1:
+        req_data[3] = int(req_data[3])
     posts = execute_select_one(select_stmt, req_data)
-    print(posts)
-    serialized_post = posts[0][1:]
-    answer = {"code": 0, "response": serialize_post(serialized_post, posts[0][0])}
+    resp = posts_to_list(posts)
+    answer = {"code": 0, "response": resp}
     return jsonify(answer)
 
 
@@ -191,6 +213,11 @@ def remove():
         return jsonify(answer)
     upd_stmt = ('UPDATE Posts SET isDeleted = 1 WHERE id = %s')
     execute_insert(upd_stmt, rem_data[0])
+    select_stmt = 'SELECT thread FROM Posts WHERE id = %s'
+    current_thread = execute_select_one(select_stmt, rem_data[0])
+    print(current_thread)
+    upd_stmt = 'UPDATE Threads SET posts = posts - 1 WHERE id = %s '
+    execute_insert(upd_stmt, current_thread[0][0])
     answer = {"code": 0, "response": rem_data[0]}
     return jsonify(answer)
 
@@ -206,6 +233,11 @@ def restore():
         return jsonify(answer)
     upd_stmt = ('UPDATE Posts SET isDeleted = 0 WHERE id = %s')
     execute_insert(upd_stmt, rem_data[0])
+    select_stmt = 'SELECT thread FROM Posts WHERE id = %s'
+    current_thread = execute_select_one(select_stmt, rem_data[0])
+    print(current_thread)
+    upd_stmt = 'UPDATE Threads SET posts = posts + 1 WHERE id = %s '
+    execute_insert(upd_stmt, current_thread[0])
     answer = {"code": 0, "response": rem_data[0]}
     return jsonify(answer)
 
