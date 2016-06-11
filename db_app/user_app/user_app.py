@@ -1,7 +1,10 @@
+import json
 from flask import jsonify, Blueprint
 from flask import request
 from db_app.executor import *
 import urlparse
+
+from db_app.post_app.post_app import serialize_post
 
 app = Blueprint('user_app', __name__)
 
@@ -15,6 +18,7 @@ def serialize_user(user, user_id, subscriptions, following, followers):
         'id': user_id,
         'isAnonymous': bool(user[3]),
         'name': user[4],
+        'subscriptions': subscriptions,
         'username': user[5]
     }
     return resp
@@ -69,7 +73,8 @@ def create():
     user_id = execute_insert(insert_stmt, data)
     select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE id = %s')
     resp = execute_select_one(select_stmt, user_id)
-    sub = following = followers = []
+    following = followers = []
+    sub = []
     answer = jsonify({"code": 0, "response": serialize_user(resp[0], user_id, sub, following, followers)})
     return answer
 
@@ -93,7 +98,12 @@ def details():
     followers = []
     for fol in subs:
         res.append(fol[0])
-    answer = jsonify({"code": 0, "response": serialize_user(user[0], user[0][0], res, following, followers)})
+    select_stmt = 'SELECT thread FROM Subscribe WHERE follower_mail = %s'
+    resp = execute_select_one(select_stmt, user_mail)
+    sub = []
+    for s in resp:
+        sub.append(s[0])
+    answer = jsonify({"code": 0, "response": serialize_user(user[0], user[0][0], sub, following, followers)})
     return answer
 
 
@@ -158,7 +168,6 @@ def update():
 
 @app.route('/listFollowers/', methods=['GET'])
 def listFollowers():
-    #TODO: for number of users
     qs = urlparse.urlparse(request.url).query
     req = urlparse.parse_qs(qs)
     data = []
@@ -172,47 +181,7 @@ def listFollowers():
     select_stmt = 'SELECT follower_mail FROM Followers WHERE followee_mail = %s'
     try:
         data.append(req["since_id"])
-        select_stmt += 'AND id >=' + data[count][0]
-        count += 1
-    except KeyError:
-        pass
-    try:
-        data.append(req["order"])
-        select_stmt += ' ORDER BY followee_mail ' + data[count][0]
-        count += 1
-    except KeyError:
-        pass
-    try:
-        data.append(req["limit"])
-        select_stmt += 'LIMIT' + data[count][0]
-    except KeyError:
-        pass
-    mails = execute_select_one(select_stmt, data[0])
-    select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
-    followers = []
-    for mail in mails:
-        followers.append(execute_select_one(select_stmt, mail))
-    for user in followers:
-         return jsonify((serialize_user(user)))
-
-
-@app.route('/listFollowing/', methods=['GET'])
-def listFollowing():
-    #TODO: for number of users
-    qs = urlparse.urlparse(request.url).query
-    req = urlparse.parse_qs(qs)
-    data = []
-    count = 0
-    try:
-        data.append(req["user"])
-        count+=1
-    except KeyError:
-        answer = {"code": 2, "response": "invalid json"}
-        return jsonify(answer)
-    select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
-    try:
-        data.append(req["since_id"])
-        select_stmt += ' AND id >=' + data[count][0]
+        select_stmt += ' AND id >= ' + data[count][0]
         count += 1
     except KeyError:
         pass
@@ -228,12 +197,95 @@ def listFollowing():
     except KeyError:
         pass
     mails = execute_select_one(select_stmt, data[0])
-    select_stmt = ('SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s')
-    followers = []
+    select_stmt = 'SELECT id, email, about, isAnonymous, name, username FROM Users WHERE'
+    req_data = []
     for mail in mails:
-        followers.append(execute_select_one(select_stmt, mail))
-    for user in followers:
-         return jsonify((serialize_user(user[0], user[0][0])))
+        req_data.append(mail[0])
+        if mail == mails[0]:
+            select_stmt += ' email = %s '
+        else:
+            select_stmt += ' or email = %s '
+    followers = execute_select_one(select_stmt, req_data)
+    answer = []
+    for f in followers:
+        select_stmt = 'SELECT thread FROM Subscribe WHERE user = %s'
+        subs = execute_select_one(select_stmt, f[1])
+        sub_data = []
+        for s in subs:
+            sub_data.append(s[0])
+        select_stmt = 'SELECT follower_mail FROM Followers WHERE followee_mail = %s'
+        followers = execute_select_one(select_stmt, f[1])
+        followers_data = []
+        for fol in followers:
+            followers_data.append(fol[0])
+        select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
+        followee = execute_select_one(select_stmt, f[1])
+        followee_data = []
+        for fol in followee:
+            followee_data.append(fol[0])
+        answer.append(serialize_user(f, f[0], sub_data, followee_data, followers_data))
+    return json.dumps({"code": 0, "response": answer})
+
+
+@app.route('/listFollowing/', methods=['GET'])
+def listFollowing():
+    qs = urlparse.urlparse(request.url).query
+    req = urlparse.parse_qs(qs)
+    data = []
+    count = 0
+    try:
+        data.append(req["user"])
+        count+=1
+    except KeyError:
+        answer = {"code": 2, "response": "invalid json"}
+        return jsonify(answer)
+    select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
+    try:
+        data.append(req["since_id"])
+        select_stmt += ' AND id >= ' + data[count][0]
+        count += 1
+    except KeyError:
+        pass
+    try:
+        data.append(req["order"])
+        select_stmt += ' ORDER BY follower_mail ' + data[count][0]
+        count += 1
+    except KeyError:
+        pass
+    try:
+        data.append(req["limit"])
+        select_stmt += ' LIMIT ' + data[count][0]
+    except KeyError:
+        pass
+    mails = execute_select_one(select_stmt, data[0])
+    select_stmt = 'SELECT id, email, about, isAnonymous, name, username FROM Users WHERE'
+    req_data = []
+    for mail in mails:
+        req_data.append(mail[0])
+        if mail == mails[0]:
+            select_stmt += ' email = %s '
+        else:
+            select_stmt += ' or email = %s '
+    followers = execute_select_one(select_stmt, req_data)
+    answer = []
+    for f in followers:
+        select_stmt = 'SELECT thread FROM Subscribe WHERE user = %s'
+        subs = execute_select_one(select_stmt, f[1])
+        sub_data = []
+        for s in subs:
+            sub_data.append(s[0])
+        select_stmt = 'SELECT follower_mail FROM Followers WHERE followee_mail = %s'
+        followers = execute_select_one(select_stmt, f[1])
+        followers_data = []
+        for fol in followers:
+            followers_data.append(fol[0])
+        select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
+        followee = execute_select_one(select_stmt, f[1])
+        followee_data = []
+        for fol in followee:
+            followee_data.append(fol[0])
+        answer.append(serialize_user(f, f[0], sub_data, followee_data, followers_data))
+    return json.dumps({"code": 0, "response": answer})
 
 
 @app.route('/listPosts/', methods=['GET'])
@@ -266,9 +318,12 @@ def listPosts():
     for d in data:
         req_data.append(d[0])
     posts = execute_select_one(select_stmt, req_data)
-    print(posts)
-    answer = {"code": 0, "response": []}
-    return jsonify(answer)
+    #print(posts)
+    answer = []
+    for p in posts:
+        p_data = p[1:]
+        answer.append(serialize_post(p_data, p[0]))
+    return json.dumps({"code": 0, "response": answer})
 
 
 

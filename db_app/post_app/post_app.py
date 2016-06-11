@@ -196,6 +196,7 @@ def list():
         req_data[0] = int(req_data[0])
     if limit == 1:
         req_data[3] = int(req_data[3])
+    print select_stmt
     posts = execute_select_one(select_stmt, req_data)
     resp = posts_to_list(posts)
     answer = {"code": 0, "response": resp}
