@@ -89,16 +89,17 @@ def details():
         'SELECT id, email, about, isAnonymous, name, username FROM Users WHERE email = %s'
     )
     user = execute_select_one(select_stmt, user_mail)
-    select_stmt = ('SELECT followee_mail, follower_mail FROM Followers WHERE follower_mail = %s')
-    subs = execute_select_one(select_stmt, user_mail)
-    res = []
+    select_stmt = ('SELECT followee_mail FROM Followers WHERE follower_mail = %s')
+    follower = execute_select_one(select_stmt, user_mail)
     following = []
-    for fol in subs:
-        following.append(fol[1])
+    for fol in follower:
+        following.append(fol[0])
+    select_stmt = ('SELECT follower_mail FROM Followers WHERE followee_mail = %s')
+    follower = execute_select_one(select_stmt, user_mail)
     followers = []
-    for fol in subs:
-        res.append(fol[0])
-    select_stmt = 'SELECT thread FROM Subscribe WHERE follower_mail = %s'
+    for fol in follower:
+        followers.append(fol[0])
+    select_stmt = 'SELECT thread FROM Subscribe WHERE user = %s'
     resp = execute_select_one(select_stmt, user_mail)
     sub = []
     for s in resp:
@@ -124,7 +125,6 @@ def follow():
     )
     #TODO: validate user
     pair_id = execute_insert(insert_stmt, data)
-    print(pair_id)
     return jsonify({"code": 0, "response": pair_id})
 
 
@@ -174,7 +174,7 @@ def listFollowers():
     count = 0
     try:
         data.append(req["user"])
-        count+=1
+        count += 1
     except KeyError:
         answer = {"code": 2, "response": "invalid json"}
         return jsonify(answer)

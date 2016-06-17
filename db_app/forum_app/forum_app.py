@@ -1,3 +1,5 @@
+import json
+
 from flask import Blueprint
 from flask import request, jsonify
 from db_app.executor import *
@@ -17,6 +19,20 @@ def serialize_forum(forum, forum_id):
     }
     return resp
 
+
+def serialize_user(user, user_id, subscriptions, following, followers):
+    resp = {
+        'about': user[2],
+        'email': user[4],
+        'followers': followers,
+        'following': following,
+        'id': user_id,
+        'isAnonymous': bool(user[5]),
+        'name': user[3],
+        'subscriptions': subscriptions,
+        'username': user[1]
+    }
+    return resp
 
 def serialize_post(post):
     resp = {
@@ -159,13 +175,16 @@ def listUsers():
         return jsonify(answer)
     select_stmt = ('SELECT * FROM Users WHERE email IN (SELECT DISTINCT user FROM Posts WHERE forum = %s)')
     try:
-        data.append(req["since"])
-        select_stmt += ' AND date > %s '
+        data.append(req["since_id"])
+        select_stmt += ' AND id >= %s '
     except KeyError:
         pass
     try:
-        data.append(req["order"])
-        select_stmt += ' ORDER BY %s '
+        order = req["order"]
+        if order[0] == 'asc':
+            select_stmt += 'ORDER BY name asc '
+        if order[0] == 'desc':
+            select_stmt += 'ORDER BY name desc'
     except KeyError:
         pass
     try:
@@ -175,8 +194,32 @@ def listUsers():
         pass
     req_data = []
     for d in data:
-        req_data.append(d[0])
-    posts = execute_select_one(select_stmt, req_data)
-    print(posts)
-    answer = {"code": 0, "response": []}
-    return jsonify(answer)
+        el = d[0]
+        try:
+            el = int(d[0])
+        except Exception:
+            pass
+        req_data.append(el)
+    print req_data
+    print select_stmt
+    users = execute_select_one(select_stmt, req_data)
+    answer = []
+    for u in users:
+        print u
+        select_stmt = 'SELECT thread FROM Subscribe WHERE user = %s'
+        subs = execute_select_one(select_stmt, u[4])
+        sub_data = []
+        for s in subs:
+            sub_data.append(s[0])
+        select_stmt = 'SELECT follower_mail FROM Followers WHERE followee_mail = %s'
+        followers = execute_select_one(select_stmt, u[4])
+        followers_data = []
+        for fol in followers:
+            followers_data.append(fol[0])
+        select_stmt = 'SELECT followee_mail FROM Followers WHERE follower_mail = %s'
+        followee = execute_select_one(select_stmt, u[4])
+        followee_data = []
+        for fol in followee:
+            followee_data.append(fol[0])
+        answer.append(serialize_user(u, u[0], sub_data, followee_data, followers_data))
+    return json.dumps({"code": 0, "response": answer})

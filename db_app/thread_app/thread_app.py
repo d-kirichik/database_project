@@ -22,6 +22,23 @@ def serialize_unicode_thread(thread, thread_id):
 
 
 def serialize_thread(thread, thread_id):
+    if thread[7] == 1:
+        resp = {
+            'date': thread[4].isoformat(sep=' '),
+            'dislikes': thread[10],
+            'forum': thread[0],
+            'id': int(thread_id),
+            'isClosed': bool(thread[2]),
+            'isDeleted': bool(thread[7]),
+            'likes': thread[9],
+            'message': thread[5],
+            'points': thread[9] - thread[10],
+            'posts': 0,
+            'slug': thread[6],
+            'title': thread[1],
+            'user': thread[3]
+        }
+        return resp
     resp = {
         'date': thread[4].isoformat(sep=' '),
         "dislikes": thread[10],
@@ -191,6 +208,8 @@ def remove():
         answer = {"code": 2, "response": "invalid json"}
         return jsonify(answer)
     upd_stmt = ('UPDATE Threads SET isDeleted = 1 WHERE id = %s')
+    execute_insert(upd_stmt, rem_data[0])
+    #upd_stmt = ('UPDATE Posts SET isDeleted = 1 WHERE thread = %s')
     execute_insert(upd_stmt, rem_data[0])
     answer = {"code": 0, "response": rem_data[0]}
     return jsonify(answer)
